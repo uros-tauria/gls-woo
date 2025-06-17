@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.2
+ * Version: 1.0.3
  * Author: Tauria
  */
 
@@ -10,17 +10,14 @@ if (!defined('ABSPATH')) exit;
 
 require __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 
-$myUpdateChecker = $updateChecker = Puc_v5p6_Factory::buildUpdateChecker(
+use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
+
+$myUpdateChecker = PucFactory::buildUpdateChecker(
     'https://github.com/uros-tauria/gls-woo/',
     __FILE__,
     'gls-woo'
 );
-
-// Optional: If your repo is private
-$myUpdateChecker->setAuthentication('your-github-token');
-
-// Optional: Use releases instead of master branch
-$myUpdateChecker->getVcsPluginUpdateChecker()->setBranch('main'); // or 'master'
+$myUpdateChecker->setBranch('master');
 
 
 // Load Paketomat handling on order placement
