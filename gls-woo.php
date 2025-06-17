@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.4
+ * Version: 1.0.5
  * Author: Tauria
  */
 
@@ -188,7 +188,7 @@ function mygls_add_settings_page() {
         'manage_options',
         'mygls-settings',
         'mygls_render_settings_page',
-        'dashicons-admin-generic'
+        plugins_url( "assets/icon.png", __FILE__ )
     );
 }
 
