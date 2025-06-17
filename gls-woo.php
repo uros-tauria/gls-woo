@@ -2,16 +2,16 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.1
+ * Version: 1.0.2
  * Author: Tauria
  */
 
 if (!defined('ABSPATH')) exit;
 
-require 'plugin-update-checker/plugin-update-checker.php';
+require __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 
-$myUpdateChecker = Puc_v4_Factory::buildUpdateChecker(
-    'https://github.com/YOUR-GITHUB-USERNAME/gls-woo/',
+$myUpdateChecker = $updateChecker = Puc_v5p6_Factory::buildUpdateChecker(
+    'https://github.com/uros-tauria/gls-woo/',
     __FILE__,
     'gls-woo'
 );
