@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.3
+ * Version: 1.0.4
  * Author: Tauria
  */
 
@@ -177,3 +177,88 @@ function mygls_get_dynamic_lockers() {
     return $lockers;
 }
 
+/* REGISTER MENU PAGE */
+
+// Create settings page
+add_action('admin_menu', 'mygls_add_settings_page');
+function mygls_add_settings_page() {
+    add_menu_page(
+        'MyGLS Settings',
+        'MyGLS Settings',
+        'manage_options',
+        'mygls-settings',
+        'mygls_render_settings_page',
+        'dashicons-admin-generic'
+    );
+}
+
+function mygls_render_settings_page() {
+    ?>
+    <div class="wrap">
+        <h1>MyGLS Nastavitve</h1>
+        <form method="post" action="options.php">
+            <?php
+            settings_fields('mygls_settings_group');
+            do_settings_sections('mygls-settings');
+            submit_button();
+            ?>
+        </form>
+    </div>
+    <?php
+}
+
+// Register settings
+add_action('admin_init', 'mygls_register_settings');
+function mygls_register_settings() {
+    register_setting('mygls_settings_group', 'mygls_settings');
+
+    add_settings_section('mygls_main', '', null, 'mygls-settings');
+
+    add_settings_field(
+        'api_username',
+        'API Email',
+        'mygls_render_text_field',
+        'mygls-settings',
+        'mygls_main',
+        ['label_for' => 'api_username']
+    );
+
+    add_settings_field(
+        'api_password',
+        'API Geslo',
+        'mygls_render_password_field',
+        'mygls-settings',
+        'mygls_main',
+        ['label_for' => 'api_password']
+    );
+
+    add_settings_field(
+        'client_number',
+        'GLS Client Number',
+        'mygls_render_text_field',
+        'mygls-settings',
+        'mygls_main',
+        ['label_for' => 'client_number']
+    );
+
+    add_settings_field(
+        'locker_url',
+        'Locker Feed URL',
+        'mygls_render_text_field',
+        'mygls-settings',
+        'mygls_main',
+        ['label_for' => 'locker_url']
+    );
+}
+
+function mygls_render_text_field($args) {
+    $options = get_option('mygls_settings');
+    $value = esc_attr($options[$args['label_for']] ?? '');
+    echo "<input type='text' id='{$args['label_for']}' name='mygls_settings[{$args['label_for']}]' value='{$value}' class='regular-text'>";
+}
+
+function mygls_render_password_field($args) {
+    $options = get_option('mygls_settings');
+    $value = esc_attr($options[$args['label_for']] ?? '');
+    echo "<input type='password' id='{$args['label_for']}' name='mygls_settings[{$args['label_for']}]' value='{$value}' class='regular-text'>";
+}
