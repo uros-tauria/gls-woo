@@ -10,6 +10,27 @@ if (!defined('ABSPATH')) exit;
 
 require __DIR__ . '/plugin-update-checker/plugin-update-checker.php';
 
+
+add_action('wp_enqueue_scripts', function () {
+    if (is_checkout()) {
+        wp_enqueue_style(
+            'mygls-paketomat-css',
+            plugin_dir_url(__FILE__) . 'assets/css/paketomat.css',
+            [],
+            '1.0'
+        );
+
+        wp_enqueue_script(
+            'mygls-paketomat-js',
+            plugin_dir_url(__FILE__) . 'assets/js/paketomat.js',
+            ['jquery'],
+            '1.0',
+            true
+        );
+    }
+});
+
+
 use YahnisElsts\PluginUpdateChecker\v5\PucFactory;
 
 $myUpdateChecker = PucFactory::buildUpdateChecker(
@@ -346,32 +367,8 @@ add_action('woocommerce_after_checkout_form', 'mygls_add_locker_modal');
 function mygls_add_locker_modal() {
     $lockers = mygls_get_dynamic_lockers();
     unset($lockers['']); // remove "Izberi" from modal
+?>
 
-    ?>
-    <style>
-        #gls-paketomat-modal {
-            display: none;
-            position: fixed;
-            z-index: 99999;
-            left: 0; top: 0;
-            width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-        }
-        #gls-paketomat-modal .modal-content {
-            background: white;
-            max-width: 500px;
-            margin: 100px auto;
-            padding: 30px;
-            border-radius: 10px;
-            position: relative;
-        }
-        #gls-paketomat-modal .close {
-            position: absolute;
-            top: 10px; right: 15px;
-            cursor: pointer;
-            font-size: 20px;
-        }
-    </style>
 
     <div id="gls-paketomat-modal">
         <div class="modal-content">
@@ -389,50 +386,6 @@ function mygls_add_locker_modal() {
 
     <input type="hidden" name="gls_paketomat" id="gls-paketomat-hidden" value="">
     <div id="gls-paketomat-summary" style="margin-top: 10px; display:none;"><strong>Paketomat:</strong> <span></span></div>
-
-    <script>
-    jQuery(function($){
-        let $modal = $('#gls-paketomat-modal');
-        let $select = $('#gls-paketomat-select');
-        let $hidden = $('#gls-paketomat-hidden');
-
-        function toggleModal(show) {
-            if (show) $modal.show();
-            else $modal.hide();
-        }
-
-        $(document.body).on('updated_checkout', function () {
-            let $selectedMethod = $('input[name^=shipping_method]:checked').val();
-            if ($selectedMethod === 'mygls_paketomat' && !$hidden.val()) {
-                toggleModal(true);
-            }
-        });
-
-        $(document).on('change', 'input[name^=shipping_method]', function () {
-            if ($(this).val() === 'mygls_paketomat') {
-                toggleModal(true);
-            }
-        });
-        $('#gls-paketomat-confirm').on('click', function(){
-            let selectedVal = $select.val();
-            let selectedText = $select.find('option:selected').text();
-
-            if (!selectedVal) {
-                alert('Prosimo, izberi paketomat.');
-                return;
-            }
-
-            $hidden.val(selectedVal);
-            $('#gls-paketomat-summary span').text(selectedText);
-            $('#gls-paketomat-summary').show();
-            toggleModal(false);
-        });
-
-        $('#gls-paketomat-modal .close').on('click', function(){
-            toggleModal(false);
-        });
-    });
-    </script>
     <?php
 }
 
