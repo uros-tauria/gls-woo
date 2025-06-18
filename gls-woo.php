@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.13
+ * Version: 1.0.14
  * Author: Tauria
  */
 
@@ -110,30 +110,8 @@ function mygls_create_parcel_for_order($order_id) {
     }
 }
 
-// Add Paketomat dropdown to checkout
-add_action('woocommerce_after_order_notes', 'mygls_paketomat_checkout_field');
 
-function mygls_paketomat_checkout_field($checkout) {
-    echo '<h3>' . __('Izberi Paketomat (GLS Locker)') . '</h3>';
 
-    woocommerce_form_field('gls_paketomat', [
-        'type'     => 'select',
-        'class'    => ['form-row-wide'],
-        'label'    => __('Paketomat lokacija'),
-        'required' => true,
-		'options'  => mygls_get_dynamic_lockers()
-    ], $checkout->get_value('gls_paketomat'));
-}
-
-function mygls_get_paketomat_options() {
-    return [
-        '' => 'Izberi...',
-        '2351-CSOMAGPONT' => 'Ljubljana - Trgovina XYZ',
-        '2352-CSOMAGPONT' => 'Maribor - Mercator Center',
-        '2353-CSOMAGPONT' => 'Celje - Petrol Cesta',
-        // Add more real GLS Paketomat locations here
-    ];
-}
 
 // Validate
 add_action('woocommerce_checkout_process', function () {
@@ -342,40 +320,6 @@ function mygls_add_shipping_method($methods) {
 add_filter('woocommerce_shipping_methods', 'mygls_add_shipping_method');
 
 
-
-
-add_action('woocommerce_review_order_after_shipping', 'mygls_paketomat_picker_if_selected');
-function mygls_paketomat_picker_if_selected() {
-    echo '<div id="mygls-paketomat-wrapper" style="display:none">';
-    woocommerce_form_field('gls_paketomat', [
-        'type'     => 'select',
-        'class'    => ['form-row-wide'],
-        'label'    => __('Izberi Paketomat'),
-        'required' => true,
-        'options'  => mygls_get_dynamic_lockers()
-    ]);
-    echo '</div>';
-
-    ?>
-    <script>
-        jQuery(function($) {
-            function togglePaketomatField() {
-                let selected = $('input[name^=shipping_method]:checked').val();
-                if (selected === 'mygls_paketomat') {
-                    $('#mygls-paketomat-wrapper').show();
-                } else {
-                    $('#mygls-paketomat-wrapper').hide();
-                }
-            }
-
-            $(document.body).on('change', 'input[name^=shipping_method]', togglePaketomatField);
-            togglePaketomatField(); // Run on load
-        });
-    </script>
-    <?php
-}
-
-
 add_action('woocommerce_checkout_process', function () {
     if (WC()->session->get('chosen_shipping_methods')[0] === 'mygls_paketomat' && empty($_POST['gls_paketomat'])) {
         wc_add_notice(__('Prosimo, izberi GLS Paketomat.'), 'error');
@@ -396,4 +340,93 @@ add_action('woocommerce_admin_order_data_after_shipping_address', function ($ord
 });
 
 
+/* POPUP */
+
+add_action('woocommerce_after_checkout_form', 'mygls_add_locker_modal');
+function mygls_add_locker_modal() {
+    $lockers = mygls_get_dynamic_lockers();
+    unset($lockers['']); // remove "Izberi" from modal
+
+    ?>
+    <style>
+        #gls-paketomat-modal {
+            display: none;
+            position: fixed;
+            z-index: 99999;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+        }
+        #gls-paketomat-modal .modal-content {
+            background: white;
+            max-width: 500px;
+            margin: 100px auto;
+            padding: 30px;
+            border-radius: 10px;
+            position: relative;
+        }
+        #gls-paketomat-modal .close {
+            position: absolute;
+            top: 10px; right: 15px;
+            cursor: pointer;
+            font-size: 20px;
+        }
+    </style>
+
+    <div id="gls-paketomat-modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h3>Izberi GLS Paketomat</h3>
+            <select id="gls-paketomat-select" class="form-control" style="width:100%">
+                <option value="">Izberi...</option>
+                <?php foreach ($lockers as $id => $label): ?>
+                    <option value="<?= esc_attr($id) ?>"><?= esc_html($label) ?></option>
+                <?php endforeach; ?>
+            </select>
+            <button type="button" id="gls-paketomat-confirm" class="button alt" style="margin-top:15px;">Potrdi izbiro</button>
+        </div>
+    </div>
+
+    <input type="hidden" name="gls_paketomat" id="gls-paketomat-hidden" value="">
+    <div id="gls-paketomat-summary" style="margin-top: 10px; display:none;"><strong>Paketomat:</strong> <span></span></div>
+
+    <script>
+    jQuery(function($){
+        let $modal = $('#gls-paketomat-modal');
+        let $select = $('#gls-paketomat-select');
+        let $hidden = $('#gls-paketomat-hidden');
+
+        function toggleModal(show) {
+            if (show) $modal.show();
+            else $modal.hide();
+        }
+
+        $('input[name^=shipping_method]').on('change', function(){
+            if ($(this).val() === 'mygls_paketomat') {
+                toggleModal(true);
+            }
+        });
+
+        $('#gls-paketomat-confirm').on('click', function(){
+            let selectedVal = $select.val();
+            let selectedText = $select.find('option:selected').text();
+
+            if (!selectedVal) {
+                alert('Prosimo, izberi paketomat.');
+                return;
+            }
+
+            $hidden.val(selectedVal);
+            $('#gls-paketomat-summary span').text(selectedText);
+            $('#gls-paketomat-summary').show();
+            toggleModal(false);
+        });
+
+        $('#gls-paketomat-modal .close').on('click', function(){
+            toggleModal(false);
+        });
+    });
+    </script>
+    <?php
+}
 
