@@ -267,8 +267,7 @@ function mygls_render_password_field($args) {
 
 /* GLS PAKETOMAT SHIPPING METHOD */
 
-add_action('woocommerce_shipping_init', 'mygls_paketomat_shipping_method_init');
-function mygls_paketomat_shipping_method_init() {
+if (class_exists('WC_Shipping_Method')) {
     class WC_MyGLS_Paketomat_Shipping_Method extends WC_Shipping_Method {
         public function __construct() {
             $this->id                 = 'mygls_paketomat';
