@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.14
+ * Version: 1.0.15
  * Author: Tauria
  */
 
@@ -401,12 +401,18 @@ function mygls_add_locker_modal() {
             else $modal.hide();
         }
 
-        $('input[name^=shipping_method]').on('change', function(){
-            if ($(this).val() === 'mygls_paketomat') {
+        $(document.body).on('updated_checkout', function () {
+            let $selectedMethod = $('input[name^=shipping_method]:checked').val();
+            if ($selectedMethod === 'mygls_paketomat' && !$hidden.val()) {
                 toggleModal(true);
             }
         });
 
+        $(document).on('change', 'input[name^=shipping_method]', function () {
+            if ($(this).val() === 'mygls_paketomat') {
+                toggleModal(true);
+            }
+        });
         $('#gls-paketomat-confirm').on('click', function(){
             let selectedVal = $select.val();
             let selectedText = $select.find('option:selected').text();
@@ -430,3 +436,13 @@ function mygls_add_locker_modal() {
     <?php
 }
 
+add_action('woocommerce_review_order_before_shipping', function () {
+    if (isset($_POST['gls_paketomat'])) {
+        echo '<tr class="gls-paketomat-summary"><td colspan="2"><strong>Paketomat:</strong> ' . esc_html($_POST['gls_paketomat']) . '</td></tr>';
+    } else {
+        $locker = WC()->session->get('gls_paketomat');
+        if ($locker) {
+            echo '<tr class="gls-paketomat-summary"><td colspan="2"><strong>Paketomat:</strong> ' . esc_html($locker) . '</td></tr>';
+        }
+    }
+});
