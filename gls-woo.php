@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.6
+ * Version: 1.0.7
  * Author: Tauria
  */
 
@@ -28,8 +28,8 @@ function mygls_create_parcel_for_order($order_id) {
 
     // Hardcoded pickup data (update with your real sender info)
     $pickup = [
-        'Name' => 'Your Company',
-        'Street' => 'Test Street',
+        'Name' => 'Parnad',
+        'Street' => 'Test',
         'HouseNumber' => '1',
         'City' => 'Ljubljana',
         'ZipCode' => '1000',
@@ -241,6 +241,16 @@ function mygls_register_settings() {
         'mygls_main',
         ['label_for' => 'client_number']
     );
+
+    add_settings_field(
+    'shipping_cost',
+    'GLS Paketomat Cena Dostave',
+    'mygls_render_text_field',
+    'mygls-settings',
+    'mygls_main',
+    ['label_for' => 'shipping_cost']
+);
+
 }
 
 function mygls_render_text_field($args) {
@@ -254,3 +264,118 @@ function mygls_render_password_field($args) {
     $value = esc_attr($options[$args['label_for']] ?? '');
     echo "<input type='password' id='{$args['label_for']}' name='mygls_settings[{$args['label_for']}]' value='{$value}' class='regular-text'>";
 }
+
+/* GLS PAKETOMAT SHIPPING METHOD */
+
+add_action('woocommerce_shipping_init', 'mygls_paketomat_shipping_method_init');
+function mygls_paketomat_shipping_method_init() {
+    class WC_MyGLS_Paketomat_Shipping_Method extends WC_Shipping_Method {
+        public function __construct() {
+            $this->id                 = 'mygls_paketomat';
+            $this->method_title       = 'GLS Paketomat';
+            $this->method_description = 'Dostava na GLS Paketomat lokacijo.';
+            $this->enabled            = 'yes';
+            $this->title              = 'GLS Paketomat';
+            $this->init();
+        }
+
+        public function init() {
+            $this->init_form_fields();
+            $this->init_settings();
+
+            $this->enabled = $this->get_option('enabled');
+            $this->title   = $this->get_option('title');
+
+            add_action('woocommerce_update_options_shipping_' . $this->id, [$this, 'process_admin_options']);
+        }
+
+        public function init_form_fields() {
+            $this->form_fields = [
+                'enabled' => [
+                    'title'   => 'Omogočeno',
+                    'type'    => 'checkbox',
+                    'label'   => 'Omogoči GLS Paketomat dostavo',
+                    'default' => 'yes'
+                ],
+                'title' => [
+                    'title'       => 'Ime metode',
+                    'type'        => 'text',
+                    'description' => 'Prikazano ime med možnostmi dostave',
+                    'default'     => 'GLS Paketomat',
+                    'desc_tip'    => true,
+                ]
+            ];
+        }
+
+        public function calculate_shipping($package = []) {
+            $options = get_option('mygls_settings');
+            $cost = isset($options['shipping_cost']) ? floatval($options['shipping_cost']) : 0;
+
+            $this->add_rate([
+                'id'    => $this->id,
+                'label' => $this->title,
+                'cost'  => $cost,
+            ]);
+        }
+    }
+}
+
+add_filter('woocommerce_shipping_methods', 'mygls_add_custom_shipping_method');
+function mygls_add_custom_shipping_method($methods) {
+    $methods['mygls_paketomat'] = 'WC_MyGLS_Paketomat_Shipping_Method';
+    return $methods;
+}
+
+add_action('woocommerce_review_order_after_shipping', 'mygls_paketomat_picker_if_selected');
+function mygls_paketomat_picker_if_selected() {
+    echo '<div id="mygls-paketomat-wrapper" style="display:none">';
+    woocommerce_form_field('gls_paketomat', [
+        'type'     => 'select',
+        'class'    => ['form-row-wide'],
+        'label'    => __('Izberi Paketomat'),
+        'required' => true,
+        'options'  => mygls_get_dynamic_lockers()
+    ]);
+    echo '</div>';
+
+    ?>
+    <script>
+        jQuery(function($) {
+            function togglePaketomatField() {
+                let selected = $('input[name^=shipping_method]:checked').val();
+                if (selected === 'mygls_paketomat') {
+                    $('#mygls-paketomat-wrapper').show();
+                } else {
+                    $('#mygls-paketomat-wrapper').hide();
+                }
+            }
+
+            $(document.body).on('change', 'input[name^=shipping_method]', togglePaketomatField);
+            togglePaketomatField(); // Run on load
+        });
+    </script>
+    <?php
+}
+
+
+add_action('woocommerce_checkout_process', function () {
+    if (WC()->session->get('chosen_shipping_methods')[0] === 'mygls_paketomat' && empty($_POST['gls_paketomat'])) {
+        wc_add_notice(__('Prosimo, izberi GLS Paketomat.'), 'error');
+    }
+});
+
+add_action('woocommerce_checkout_create_order', function ($order, $data) {
+    if (!empty($_POST['gls_paketomat'])) {
+        $order->update_meta_data('gls_paketomat', sanitize_text_field($_POST['gls_paketomat']));
+    }
+}, 10, 2);
+
+add_action('woocommerce_admin_order_data_after_shipping_address', function ($order){
+    $locker = $order->get_meta('gls_paketomat');
+    if ($locker) {
+        echo '<p><strong>GLS Paketomat:</strong> ' . esc_html($locker) . '</p>';
+    }
+});
+
+
+
