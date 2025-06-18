@@ -37,17 +37,19 @@ jQuery(function($) {
         toggleModal(false);
     });
 
-    // Handle form validation
+
     $('form.checkout').on('checkout_place_order', function() {
-        let selectedId = $('#gls-paketomat-select').val();
-        $('#gls-paketomat-hidden').val(selectedId);
-        if ($('input[name^=shipping_method]:checked').val() === 'mygls_paketomat' && !selectedId) {
+        const selectedShipping = $('input[name^=shipping_method]:checked').val();
+        const lockerId = $('#gls-paketomat-hidden').val();
+
+        if (selectedShipping === 'mygls_paketomat' && !lockerId) {
             alert('Prosimo, izberi paketomat.');
-            return false;
+            return false; // Prevent order
         }
-        $hidden.val(selectedId);
+
         return true;
     });
+
 
     // Handle WooCommerce updated checkout
     $(document.body).on('updated_checkout', function () {
@@ -74,11 +76,7 @@ jQuery(function($) {
             $summary.hide();
         }
     });
-$('form.checkout').on('submit', function () {
-        let selectedId = $('#gls-paketomat-select').val();
-    $('#gls-paketomat-hidden').val(selectedId);
-    $hidden.val($select.val());
-});
+
 
     cacheElements();
 });
