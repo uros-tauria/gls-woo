@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.19
+ * Version: 1.0.20
  * Author: Tauria
  */
 
@@ -387,7 +387,7 @@ function mygls_add_locker_modal() {
     <div id="gls-paketomat-summary" style="margin-top: 10px; display:none;"><strong>Paketomat:</strong> <span></span></div>
     <?php
 }
-add_action('woocommerce_review_order_after_shipping', 'mygls_show_picker_trigger');
+add_action('woocommerce_checkout_after_shipping', 'mygls_show_picker_trigger');
 function mygls_show_picker_trigger() {
     $chosen_method = WC()->session->get('chosen_shipping_methods')[0] ?? '';
     if ($chosen_method === 'mygls_paketomat') {

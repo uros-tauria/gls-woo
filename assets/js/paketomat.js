@@ -1,4 +1,5 @@
 jQuery(function($) {
+    console.log("im in");
     let $modal = $('#gls-paketomat-modal');
     let $select = $('#gls-paketomat-select');
     let $hidden = $('#gls-paketomat-hidden');
@@ -31,7 +32,7 @@ jQuery(function($) {
             return;
         }
 
-        $hidden.val(selectedId);
+        $hidden.val(selectedId).trigger('change'); // trigger change to ensure form picks it up
         $summary.find('span').text(selectedText);
         $summary.show();
         toggleModal(false);
@@ -42,11 +43,17 @@ jQuery(function($) {
         toggleModal(false);
     });
 
-    // Also support "Izberi" on reload if user already selected before
+    // Auto-open modal on reload if GLS is selected and locker not set
     $(document.body).on('updated_checkout', function () {
         let $selectedMethod = $('input[name^=shipping_method]:checked').val();
         if ($selectedMethod === 'mygls_paketomat' && !$hidden.val()) {
             toggleModal(true);
+        }
+
+        // If locker is already selected, show it
+        if ($hidden.val()) {
+            $summary.find('span').text($select.find('option[value="' + $hidden.val() + '"]').text());
+            $summary.show();
         }
     });
 });
