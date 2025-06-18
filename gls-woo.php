@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.12
+ * Version: 1.0.13
  * Author: Tauria
  */
 
@@ -319,7 +319,7 @@ function mygls_render_password_field($args) {
                 ];
             }
 
-            public function calculate_shipping($package) {
+            public function calculate_shipping($package = []) {
                 $rate = [
                     'id'    => $this->id,
                     'label' => $this->title,
