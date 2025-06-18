@@ -65,6 +65,7 @@ jQuery(function($) {
     }
     // Make sure hidden input is updated even if they didn't click "Confirm"
     $hidden.val(selectedId);
+    console.log(selectedId);
 });
 $(document).on('change', 'input[name^=shipping_method]', function () {
     if ($(this).val() === 'mygls_paketomat') {
