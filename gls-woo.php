@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.22
+ * Version: 1.0.23
  * Author: Tauria
  */
 
@@ -390,17 +390,17 @@ function mygls_add_locker_modal() {
     <div id="gls-paketomat-summary" style="margin-top: 10px; display:none;"><strong>Paketomat:</strong> <span></span></div>
     <?php
 }
-add_action('woocommerce_checkout_after_shipping', 'mygls_show_picker_trigger');
+add_action('woocommerce_checkout_after_order_notes', 'mygls_show_picker_trigger');
 function mygls_show_picker_trigger() {
-    $chosen_method = WC()->session->get('chosen_shipping_methods')[0] ?? '';
-    if ($chosen_method === 'mygls_paketomat') {
-        echo '<div id="gls-paketomat-trigger-container" style="margin-top: 15px;">';
-        echo '<div id="gls-paketomat-summary" style="margin-top: 10px; display:none;">';
-        echo '<strong>Paketomat:</strong> <span></span> ';
-        echo '<button type="button" class="button" id="edit-paketomat" style="margin-left: 10px;">Uredi</button>';
-        echo '</div>';
-        echo '</div>';
-    }
+    ?>
+    <div id="gls-paketomat-trigger-container" style="margin-top: 15px;">
+        <input type="hidden" name="gls_paketomat" id="gls-paketomat-hidden" value="">
+        <div id="gls-paketomat-summary" style="margin-top: 10px; display:none;">
+            <strong>Paketomat:</strong> <span></span> 
+            <button type="button" class="button" id="edit-paketomat" style="margin-left: 10px;">Uredi</button>
+        </div>
+    </div>
+    <?php
 }
 
 
