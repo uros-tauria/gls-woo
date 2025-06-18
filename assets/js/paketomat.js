@@ -56,4 +56,25 @@ jQuery(function($) {
             $summary.show();
         }
     });
+
+    $('form.checkout').on('checkout_place_order', function() {
+    const selectedId = $select.val();
+    if ($('input[name^=shipping_method]:checked').val() === 'mygls_paketomat' && !selectedId) {
+        alert('Prosimo, izberi paketomat.');
+        return false; // stop form submission
+    }
+    // Make sure hidden input is updated even if they didn't click "Confirm"
+    $hidden.val(selectedId);
+});
+$(document).on('change', 'input[name^=shipping_method]', function () {
+    if ($(this).val() === 'mygls_paketomat') {
+        toggleModal(true);
+        $('#gls-paketomat-trigger-container').show();
+    } else {
+        $('#gls-paketomat-trigger-container').hide();
+        $hidden.val('');
+        $summary.hide();
+    }
+});
+
 });
