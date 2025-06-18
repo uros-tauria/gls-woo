@@ -1,5 +1,5 @@
 jQuery(function($) {
-    console.log("im in");
+
     let $modal, $select, $hidden, $summary;
 
     function cacheElements() {
@@ -39,7 +39,8 @@ jQuery(function($) {
 
     // Handle form validation
     $('form.checkout').on('checkout_place_order', function() {
-        let selectedId = $select.val();
+        let selectedId = $('#gls-paketomat-select').val();
+        $('#gls-paketomat-hidden').val(selectedId);
         if ($('input[name^=shipping_method]:checked').val() === 'mygls_paketomat' && !selectedId) {
             alert('Prosimo, izberi paketomat.');
             return false;
@@ -74,6 +75,8 @@ jQuery(function($) {
         }
     });
 $('form.checkout').on('submit', function () {
+        let selectedId = $('#gls-paketomat-select').val();
+    $('#gls-paketomat-hidden').val(selectedId);
     $hidden.val($select.val());
 });
 
