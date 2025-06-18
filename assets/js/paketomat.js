@@ -54,11 +54,15 @@ jQuery(function($) {
         let selectedMethod = $('input[name^=shipping_method]:checked').val();
         if (selectedMethod === 'mygls_paketomat') {
             if (!$hidden.val()) toggleModal(true);
-
-            if ($hidden.val()) {
-                $summary.find('span').text($select.find('option[value="' + $hidden.val() + '"]').text());
+            if ($select.val()) {
+                console.log("inside");
+                $hidden.val($select.val());
+                $summary.find('span').text($select.find('option:selected').text());
                 $summary.show();
+            }else{
+                console.log("fail");
             }
+
 
             $('#gls-paketomat-trigger-container').show();
         } else {
@@ -67,6 +71,9 @@ jQuery(function($) {
             $summary.hide();
         }
     });
+$('form.checkout').on('submit', function () {
+    $hidden.val($select.val());
+});
 
     cacheElements();
 });

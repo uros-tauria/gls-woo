@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.23
+ * Version: 1.0.24
  * Author: Tauria
  */
 
@@ -134,15 +134,6 @@ function mygls_create_parcel_for_order($order_id) {
 
 
 
-// Validate
-add_action('woocommerce_checkout_process', function () {
-    if (
-        WC()->session->get('chosen_shipping_methods')[0] === 'mygls_paketomat' &&
-        empty($_POST['gls_paketomat'])
-    ) {
-        wc_add_notice(__('Prosimo, izberi GLS Paketomat.'), 'error');
-    }
-});
 
 // Save to order
 add_action('woocommerce_checkout_create_order', function ($order, $data) {
@@ -346,6 +337,7 @@ add_filter('woocommerce_shipping_methods', 'mygls_add_shipping_method');
 
 add_action('woocommerce_checkout_process', function () {
     if (WC()->session->get('chosen_shipping_methods')[0] === 'mygls_paketomat' && empty($_POST['gls_paketomat'])) {
+        error_log('Selected GLS locker: ' . ($_POST['gls_paketomat'] ?? 'EMPTY'));
         wc_add_notice(__('Prosimo, izberi GLS Paketomat.'), 'error');
     }
 });
