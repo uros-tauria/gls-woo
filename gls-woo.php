@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.26
+ * Version: 1.0.27
  * Author: Tauria
  */
 
@@ -62,7 +62,8 @@ function mygls_create_parcel_for_order($order_id) {
 	
 		$options = get_option('mygls_settings');
 	$username = $options['api_username'] ?? '';
-	$password = hash('sha512', $options['api_password'] ?? '', true);
+	#$password = hash('sha512', $options['api_password'] ?? '', true);
+    $password = $options['api_password'] ?? '';
 	$clientNumber = (int) ($options['client_number'] ?? 0);
 
     $delivery = [
@@ -343,11 +344,6 @@ add_action('woocommerce_checkout_process', function () {
     }
 });
 
-add_action('woocommerce_checkout_create_order', function ($order, $data) {
-    if (!empty($_POST['gls_paketomat'])) {
-        $order->update_meta_data('gls_paketomat', sanitize_text_field($_POST['gls_paketomat']));
-    }
-}, 10, 2);
 
 add_action('woocommerce_admin_order_data_after_shipping_address', function ($order){
     $locker = $order->get_meta('gls_paketomat');
@@ -379,21 +375,13 @@ function mygls_add_locker_modal() {
             <button type="button" id="gls-paketomat-confirm" class="button alt" style="margin-top:15px;">Potrdi izbiro</button>
         </div>
     </div>
-    <div id="gls-paketomat-summary" style="margin-top: 10px; display:none;"><strong>Paketomat:</strong> <span></span></div>
+<div id="gls-paketomat-summary" style="margin-top: 10px; display:none;">
+    <strong>Paketomat:</strong> <span></span>
+    <input type="hidden" name="gls_paketomat" id="gls-paketomat-hidden" value="">
+</div>
     <?php
 }
-add_action('woocommerce_checkout_after_order_notes', 'mygls_show_picker_trigger');
-function mygls_show_picker_trigger() {
-    ?>
-    <div id="gls-paketomat-trigger-container" style="margin-top: 15px;">
-        <input type="hidden" name="gls_paketomat" id="gls-paketomat-hidden" value="">
-        <div id="gls-paketomat-summary" style="margin-top: 10px; display:none;">
-            <strong>Paketomat:</strong> <span></span> 
-            <button type="button" class="button" id="edit-paketomat" style="margin-left: 10px;">Uredi</button>
-        </div>
-    </div>
-    <?php
-}
+
 
 
 add_filter('woocommerce_email_order_meta_fields', 'mygls_add_paketomat_to_email_meta', 10, 3);
