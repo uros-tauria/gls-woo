@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.5
+ * Version: 1.0.6
  * Author: Tauria
  */
 
@@ -159,23 +159,24 @@ add_action('woocommerce_admin_order_data_after_shipping_address', function ($ord
 });
 
 function mygls_get_dynamic_lockers() {
-    $options = get_option('mygls_settings');
-    $url = $options['locker_url'] ?? '';
-
-    if (!$url) return [];
-
+    $url = 'https://map.gls-slovenia.com/data/deliveryPoints/si.json';
     $response = wp_remote_get($url);
     if (is_wp_error($response)) return [];
 
     $data = json_decode(wp_remote_retrieve_body($response), true);
+    if (empty($data['items'])) return [];
 
     $lockers = ['' => 'Izberi...'];
-    foreach ($data as $locker) {
-        $lockers[$locker['id']] = $locker['name'];
+    foreach ($data['items'] as $locker) {
+        if ($locker['type'] === 'parcel-locker') {
+            $label = $locker['name'] . ' – ' . $locker['contact']['address'] . ', ' . $locker['contact']['postalCode'] . ' ' . $locker['contact']['city'];
+            $lockers[$locker['id']] = $label;
+        }
     }
 
     return $lockers;
 }
+
 
 /* REGISTER MENU PAGE */
 
@@ -239,15 +240,6 @@ function mygls_register_settings() {
         'mygls-settings',
         'mygls_main',
         ['label_for' => 'client_number']
-    );
-
-    add_settings_field(
-        'locker_url',
-        'Locker Feed URL',
-        'mygls_render_text_field',
-        'mygls-settings',
-        'mygls_main',
-        ['label_for' => 'locker_url']
     );
 }
 
