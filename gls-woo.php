@@ -388,14 +388,19 @@ function mygls_add_locker_modal() {
     <div id="gls-paketomat-summary" style="margin-top: 10px; display:none;"><strong>Paketomat:</strong> <span></span></div>
     <?php
 }
-
-add_action('woocommerce_review_order_before_shipping', function () {
-    if (isset($_POST['gls_paketomat'])) {
-        echo '<tr class="gls-paketomat-summary"><td colspan="2"><strong>Paketomat:</strong> ' . esc_html($_POST['gls_paketomat']) . '</td></tr>';
-    } else {
-        $locker = WC()->session->get('gls_paketomat');
-        if ($locker) {
-            echo '<tr class="gls-paketomat-summary"><td colspan="2"><strong>Paketomat:</strong> ' . esc_html($locker) . '</td></tr>';
-        }
+add_action('woocommerce_review_order_after_shipping', 'mygls_show_picker_trigger');
+function mygls_show_picker_trigger() {
+    $chosen_method = WC()->session->get('chosen_shipping_methods')[0] ?? '';
+    if ($chosen_method === 'mygls_paketomat') {
+        echo '<div id="gls-paketomat-trigger-container" style="margin-top: 15px;">';
+        echo '<button type="button" class="button alt" id="open-paketomat-modal">Izberi GLS Paketomat</button>';
+        echo '<div id="gls-paketomat-summary" style="margin-top: 10px; display:none;">';
+        echo '<strong>Paketomat:</strong> <span></span> ';
+        echo '<button type="button" class="button" id="edit-paketomat" style="margin-left: 10px;">Uredi</button>';
+        echo '</div>';
+        echo '<input type="hidden" name="gls_paketomat" id="gls-paketomat-hidden" value="">';
+        echo '</div>';
     }
-});
+}
+
+
