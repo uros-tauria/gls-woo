@@ -59,6 +59,8 @@ jQuery(function($) {
                 $hidden.val($select.val());
                 $summary.find('span').text($select.find('option:selected').text());
                 $summary.show();
+                console.log($summary);
+                console.log($select.val());
             }else{
                 console.log("fail");
             }
