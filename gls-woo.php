@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.7
+ * Version: 1.0.8
  * Author: Tauria
  */
 
