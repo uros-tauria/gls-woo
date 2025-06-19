@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.39
+ * Version: 1.0.40
  * Author: Tauria
  */
 
@@ -40,13 +40,6 @@ $myUpdateChecker = PucFactory::buildUpdateChecker(
 );
 $myUpdateChecker->setBranch('master');
 
-// Convert plain text password to SHA512 byte array for GLS API
-function mygls_password_to_byte_array($password) {
-    $hashed = hash('sha512', $password, true); // raw binary hash
-    return array_values(unpack('C*', $hashed)); // convert binary string to array of integers
-}
-
-
 
 // Load Paketomat handling on order placement
 add_action('woocommerce_checkout_order_processed', 'mygls_create_parcel_for_order', 20, 1);
@@ -54,7 +47,20 @@ add_action('woocommerce_checkout_order_processed', 'mygls_create_parcel_for_orde
 function mygls_create_parcel_for_order($order_id) {
     $order = wc_get_order($order_id);
 
-    // Hardcoded pickup data
+    $options = get_option('mygls_settings');
+    $username = $options['api_username'] ?? '';
+    $password_plain = $options['api_password'] ?? '';
+    $clientNumber = (int) ($options['client_number'] ?? 0);
+    $locker_id = $order->get_meta('gls_paketomat');
+
+    // Log raw password for debugging (remove in production)
+    $order->add_order_note('Geslo: ' . $password_plain);
+
+    // Convert password to SHA512 raw binary
+    $password_raw = hash('sha512', $password_plain, true);
+
+    // Prepare delivery and pickup info
+    $shipping = $order->get_address('shipping');
     $pickup = [
         'Name' => 'Parnad',
         'Street' => 'Test',
@@ -63,16 +69,6 @@ function mygls_create_parcel_for_order($order_id) {
         'ZipCode' => '1000',
         'CountryIsoCode' => 'SI'
     ];
-
-    $shipping = $order->get_address('shipping');
-    $options = get_option('mygls_settings');
-    $username = $options['api_username'] ?? '';
-    $password = $options['api_password'] ?? '';
-    $clientNumber = (int) ($options['client_number'] ?? 0);
-    $locker_id = $order->get_meta('gls_paketomat');
-
-    $order->add_order_note('Geslo: ' .  $password);
-
     $delivery = [
         'Name' => $shipping['first_name'] . ' ' . $shipping['last_name'],
         'Street' => $shipping['address_1'],
@@ -99,44 +95,45 @@ function mygls_create_parcel_for_order($order_id) {
         ]]
     ];
 
-$payload = [
-    'Username' => $username,
-    'Password' => base64_encode(hash("sha512", $password, true)),
-    'ParcelList' => [$parcel],
-    'WebshopEngine' => 'WooCommerce',
-    'TypeOfPrinter' => 'A4_2x2',
-    'PrintPosition' => 1,
-    'ShowPrintDialog' => false
-];
+    // Prepare full SOAP request
+    $request = [
+        'Username' => $username,
+        'Password' => new SoapVar($password_raw, XSD_BASE64BINARY),
+        'ParcelList' => [$parcel],
+        'WebshopEngine' => 'WooCommerce',
+        'TypeOfPrinter' => 'A4_2x2',
+        'PrintPosition' => 1,
+        'ShowPrintDialog' => false
+    ];
 
-    $json = json_encode($payload);
-    $order->add_order_note('GLS payload: ' . $json);
+    try {
+        $client = new SoapClient('https://api.test.mygls.si/ParcelService.svc?singleWsdl', [
+            'trace' => 1,
+            'exceptions' => true
+        ]);
 
-    $response = wp_remote_post('https://api.test.mygls.si/ParcelService.svc/json/PrintLabels', [
-        'headers' => [
-            'Content-Type' => 'application/json'
-        ],
-        'body' => $json,
-        'timeout' => 30
-    ]);
+        $response = $client->PrintLabels($request);
 
-    if (is_wp_error($response)) {
-        error_log('MyGLS API error: ' . $response->get_error_message());
-        return;
-    }
+        if (!empty($response->Labels)) {
+            $pdf = $response->Labels;
+            $upload_dir = wp_upload_dir();
+            $file_path = $upload_dir['basedir'] . "/gls-label-order-{$order_id}.pdf";
+            file_put_contents($file_path, $pdf);
+            $order->add_order_note("GLS label generated and saved: {$file_path}");
+        } else {
+            $order->add_order_note('GLS SOAP response received, but no label was returned. Response: ' . print_r($response, true));
+        }
+    } catch (SoapFault $e) {
+    $order->add_order_note('GLS SOAP Error: ' . $e->getMessage());
+    error_log('[GLS SOAP ERROR] ' . $e->getMessage());
 
-    $body = json_decode(wp_remote_retrieve_body($response), true);
-
-    if (!empty($body['Labels'])) {
-        $pdf = base64_decode($body['Labels']);
-        $upload_dir = wp_upload_dir();
-        $file_path = $upload_dir['basedir'] . "/gls-label-order-{$order_id}.pdf";
-        file_put_contents($file_path, $pdf);
-        $order->add_order_note("GLS label generated and saved: {$file_path}");
-    } else {
-        $order->add_order_note('GLS API did not return a label. Response: ' . json_encode($body));
+    if (isset($client)) {
+        error_log('[GLS SOAP REQUEST] ' . $client->__getLastRequest());
+        error_log('[GLS SOAP RESPONSE] ' . $client->__getLastResponse());
     }
 }
+}
+
 
 
 
