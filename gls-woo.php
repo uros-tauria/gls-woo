@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.35
+ * Version: 1.0.36
  * Author: Tauria
  */
 
@@ -40,6 +40,13 @@ $myUpdateChecker = PucFactory::buildUpdateChecker(
 );
 $myUpdateChecker->setBranch('master');
 
+// Convert plain text password to SHA512 byte array for GLS API
+function mygls_password_to_byte_array($password) {
+    $hashed = hash('sha512', $password, true); // raw binary hash
+    return array_values(unpack('C*', $hashed)); // convert binary string to array of integers
+}
+
+
 
 // Load Paketomat handling on order placement
 add_action('woocommerce_checkout_order_processed', 'mygls_create_parcel_for_order', 20, 1);
@@ -64,9 +71,7 @@ function mygls_create_parcel_for_order($order_id) {
     $clientNumber = (int) ($options['client_number'] ?? 0);
     $locker_id = $order->get_meta('gls_paketomat');
 
-    // Convert password to SHA512 raw byte array
-    $hashed = hash('sha512', $password, true);
-    $passwordBytes = array_values(unpack('C*', $hashed)); // PHP byte array
+
 
     $delivery = [
         'Name' => $shipping['first_name'] . ' ' . $shipping['last_name'],
@@ -94,15 +99,15 @@ function mygls_create_parcel_for_order($order_id) {
         ]]
     ];
 
-    $payload = [
-        'Username' => $username,
-        'Password' => $passwordBytes,
-        'ParcelList' => [$parcel],
-        'WebshopEngine' => 'WooCommerce',
-        'TypeOfPrinter' => 'A4_2x2',
-        'PrintPosition' => 1,
-        'ShowPrintDialog' => false
-    ];
+$payload = [
+    'Username' => $username,
+    'Password' => mygls_password_to_byte_array($password), 
+    'ParcelList' => [$parcel],
+    'WebshopEngine' => 'WooCommerce',
+    'TypeOfPrinter' => 'A4_2x2',
+    'PrintPosition' => 1,
+    'ShowPrintDialog' => false
+];
 
     $json = json_encode($payload);
 
