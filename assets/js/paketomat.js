@@ -47,6 +47,8 @@ jQuery(function($) {
             return false; // Prevent order
         }
 
+            $('#gls-paketomat-hidden').val($('#gls-paketomat-select').val());
+
         return true;
     });
 
@@ -67,6 +69,9 @@ jQuery(function($) {
             }else{
                 console.log("fail");
             }
+
+            console.log('Hidden value after update:', $hidden.val());
+
 
 
             $('#gls-paketomat-trigger-container').show();

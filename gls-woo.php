@@ -338,8 +338,11 @@ add_filter('woocommerce_shipping_methods', 'mygls_add_shipping_method');
 
 add_action('woocommerce_checkout_process', function () {
     if (WC()->session->get('chosen_shipping_methods')[0] === 'mygls_paketomat') {
+
         $locker = sanitize_text_field($_POST['gls_paketomat'] ?? '');
-        if (empty($locker)) {
+         if (!empty($locker)) {
+            wc_add_notice('Izbran paketomat: ' . $locker, 'notice');
+        } else {
             wc_add_notice(__('Prosimo, izberi GLS Paketomat.'), 'error');
         }
     }
