@@ -39,6 +39,9 @@ jQuery(function($) {
 
 
     $('form.checkout').on('checkout_place_order', function() {
+
+                    $('#gls-paketomat-hidden').val($('#gls-paketomat-select').val());
+                    
         const selectedShipping = $('input[name^=shipping_method]:checked').val();
         const lockerId = $('#gls-paketomat-hidden').val();
 
@@ -47,7 +50,7 @@ jQuery(function($) {
             return false; // Prevent order
         }
 
-            $('#gls-paketomat-hidden').val($('#gls-paketomat-select').val());
+
 
         return true;
     });
