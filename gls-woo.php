@@ -101,7 +101,7 @@ function mygls_create_parcel_for_order($order_id) {
 
 $payload = [
     'Username' => $username,
-    'Password' => mygls_password_to_byte_array($password), 
+    'Password' => base64_encode(hash("sha512", $password, true)),
     'ParcelList' => [$parcel],
     'WebshopEngine' => 'WooCommerce',
     'TypeOfPrinter' => 'A4_2x2',
