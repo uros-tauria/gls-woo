@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.32
+ * Version: 1.0.33
  * Author: Tauria
  */
 
@@ -118,18 +118,19 @@ function mygls_create_parcel_for_order($order_id) {
         return;
     }
 
-    $body = json_decode(wp_remote_retrieve_body($response), true);
-    if (!empty($body['Labels'])) {
-        $pdf = base64_decode($body['Labels']);
-        $upload_dir = wp_upload_dir();
-        $file_path = $upload_dir['basedir'] . "/gls-label-order-{$order_id}.pdf";
-        file_put_contents($file_path, $pdf);
+$body = json_decode(wp_remote_retrieve_body($response), true);
 
-        // Save label path to order notes
-        $order->add_order_note("GLS label generated and saved: {$file_path}");
-    } else {
-        $order->add_order_note('GLS API did not return a label.');
-    }
+if (!empty($body['Labels'])) {
+    $pdf = base64_decode($body['Labels']);
+    $upload_dir = wp_upload_dir();
+    $file_path = $upload_dir['basedir'] . "/gls-label-order-{$order_id}.pdf";
+    file_put_contents($file_path, $pdf);
+
+    $order->add_order_note("GLS label generated and saved: {$file_path}");
+} else {
+    $errorMsg = isset($body['ErrorMessage']) ? $body['ErrorMessage'] : json_encode($body);
+    $order->add_order_note('GLS API did not return a label. Response: ' . $errorMsg);
+}
 }
 
 
