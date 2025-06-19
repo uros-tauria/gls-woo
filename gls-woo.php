@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.36
+ * Version: 1.0.37
  * Author: Tauria
  */
 
@@ -110,6 +110,7 @@ $payload = [
 ];
 
     $json = json_encode($payload);
+    $order->add_order_note('GLS payload: ' . $json);
 
     $response = wp_remote_post('https://api.test.mygls.si/ParcelService.svc/json/PrintLabels', [
         'headers' => [
