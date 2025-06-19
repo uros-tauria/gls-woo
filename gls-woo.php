@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.34
+ * Version: 1.0.35
  * Author: Tauria
  */
 
@@ -47,7 +47,7 @@ add_action('woocommerce_checkout_order_processed', 'mygls_create_parcel_for_orde
 function mygls_create_parcel_for_order($order_id) {
     $order = wc_get_order($order_id);
 
-    // Hardcoded pickup data (update with your real sender info)
+    // Hardcoded pickup data
     $pickup = [
         'Name' => 'Parnad',
         'Street' => 'Test',
@@ -57,19 +57,21 @@ function mygls_create_parcel_for_order($order_id) {
         'CountryIsoCode' => 'SI'
     ];
 
-    // Delivery address
     $shipping = $order->get_address('shipping');
-	
-		$options = get_option('mygls_settings');
-	$username = $options['api_username'] ?? '';
-	#$password = hash('sha512', $options['api_password'] ?? '', true);
+    $options = get_option('mygls_settings');
+    $username = $options['api_username'] ?? '';
     $password = $options['api_password'] ?? '';
-	$clientNumber = (int) ($options['client_number'] ?? 0);
+    $clientNumber = (int) ($options['client_number'] ?? 0);
+    $locker_id = $order->get_meta('gls_paketomat');
+
+    // Convert password to SHA512 raw byte array
+    $hashed = hash('sha512', $password, true);
+    $passwordBytes = array_values(unpack('C*', $hashed)); // PHP byte array
 
     $delivery = [
         'Name' => $shipping['first_name'] . ' ' . $shipping['last_name'],
         'Street' => $shipping['address_1'],
-        'HouseNumber' => preg_replace('/\D/', '', $shipping['address_1']), // crude fallback
+        'HouseNumber' => preg_replace('/\D/', '', $shipping['address_1']),
         'City' => $shipping['city'],
         'ZipCode' => $shipping['postcode'],
         'CountryIsoCode' => $shipping['country'],
@@ -77,23 +79,24 @@ function mygls_create_parcel_for_order($order_id) {
         'ContactPhone' => $order->get_billing_phone(),
         'ContactEmail' => $order->get_billing_email()
     ];
-	$locker_id = $order->get_meta('gls_paketomat');
-    // Paketomat - PSD
+
     $parcel = [
         'ClientNumber' => $clientNumber,
         'ClientReference' => 'ORDER-' . $order->get_id(),
         'PickupDate' => '/Date(' . (strtotime('today') * 1000) . ')/',
         'PickupAddress' => $pickup,
         'DeliveryAddress' => $delivery,
-		'ServiceList' => [[
-			'Code' => 'PSD',
-			'PSDParameter' => [
-				'StringValue' => $locker_id ?: '2351-CSOMAGPONT'
-			]
-		]]
+        'ServiceList' => [[
+            'Code' => 'PSD',
+            'PSDParameter' => [
+                'StringValue' => $locker_id ?: '2351-CSOMAGPONT'
+            ]
+        ]]
     ];
 
     $payload = [
+        'Username' => $username,
+        'Password' => $passwordBytes,
         'ParcelList' => [$parcel],
         'WebshopEngine' => 'WooCommerce',
         'TypeOfPrinter' => 'A4_2x2',
@@ -103,11 +106,9 @@ function mygls_create_parcel_for_order($order_id) {
 
     $json = json_encode($payload);
 
-
     $response = wp_remote_post('https://api.test.mygls.si/ParcelService.svc/json/PrintLabels', [
         'headers' => [
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Basic ' . base64_encode($username . ':' . $password)
+            'Content-Type' => 'application/json'
         ],
         'body' => $json,
         'timeout' => 30
@@ -118,19 +119,17 @@ function mygls_create_parcel_for_order($order_id) {
         return;
     }
 
-$body = json_decode(wp_remote_retrieve_body($response), true);
+    $body = json_decode(wp_remote_retrieve_body($response), true);
 
-if (!empty($body['Labels'])) {
-    $pdf = base64_decode($body['Labels']);
-    $upload_dir = wp_upload_dir();
-    $file_path = $upload_dir['basedir'] . "/gls-label-order-{$order_id}.pdf";
-    file_put_contents($file_path, $pdf);
-
-    $order->add_order_note("GLS label generated and saved: {$file_path}");
-} else {
-    $errorMsg = isset($body['ErrorMessage']) ? $body['ErrorMessage'] : json_encode($body);
-    $order->add_order_note('GLS API did not return a label. Response: ' . $errorMsg);
-}
+    if (!empty($body['Labels'])) {
+        $pdf = base64_decode($body['Labels']);
+        $upload_dir = wp_upload_dir();
+        $file_path = $upload_dir['basedir'] . "/gls-label-order-{$order_id}.pdf";
+        file_put_contents($file_path, $pdf);
+        $order->add_order_note("GLS label generated and saved: {$file_path}");
+    } else {
+        $order->add_order_note('GLS API did not return a label. Response: ' . json_encode($body));
+    }
 }
 
 
