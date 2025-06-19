@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.33
+ * Version: 1.0.34
  * Author: Tauria
  */
 
@@ -82,7 +82,7 @@ function mygls_create_parcel_for_order($order_id) {
     $parcel = [
         'ClientNumber' => $clientNumber,
         'ClientReference' => 'ORDER-' . $order->get_id(),
-        'PickupDate' => date('Y-m-d') . 'T00:00:00',
+        'PickupDate' => '/Date(' . (strtotime('today') * 1000) . ')/',
         'PickupAddress' => $pickup,
         'DeliveryAddress' => $delivery,
 		'ServiceList' => [[
