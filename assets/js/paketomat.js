@@ -5,7 +5,7 @@ jQuery(function($) {
     function cacheElements() {
         $modal = $('#gls-paketomat-modal');
         $select = $('#gls-paketomat-select');
-        $hidden = $('#gls-paketomat-hidden');
+        $hidden = $('input[name="gls_paketomat"]');
         $summary = $('#gls-paketomat-summary');
     }
 
@@ -41,7 +41,7 @@ jQuery(function($) {
     $('form.checkout').on('checkout_place_order', function() {
 
                     $('#gls-paketomat-hidden').val($('#gls-paketomat-select').val());
-                    
+
         const selectedShipping = $('input[name^=shipping_method]:checked').val();
         const lockerId = $('#gls-paketomat-hidden').val();
 

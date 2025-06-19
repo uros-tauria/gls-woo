@@ -338,15 +338,13 @@ add_filter('woocommerce_shipping_methods', 'mygls_add_shipping_method');
 
 add_action('woocommerce_checkout_process', function () {
     if (WC()->session->get('chosen_shipping_methods')[0] === 'mygls_paketomat') {
-
         $locker = sanitize_text_field($_POST['gls_paketomat'] ?? '');
-         if (!empty($locker)) {
-            wc_add_notice('Izbran paketomat: ' . $locker, 'notice');
-        } else {
+        if (empty($locker)) {
             wc_add_notice(__('Prosimo, izberi GLS Paketomat.'), 'error');
         }
     }
 });
+
 
 
 
@@ -398,3 +396,14 @@ function mygls_add_paketomat_to_email_meta($fields, $sent_to_admin, $order) {
 
 
 
+add_action('woocommerce_after_order_notes', 'mygls_add_hidden_field');
+function mygls_add_hidden_field($checkout) {
+    echo '<div id="mygls-paketomat-container" style="display:none;">';
+
+    woocommerce_form_field('gls_paketomat', [
+        'type'  => 'hidden',
+        'class' => ['mygls-paketomat-field'],
+    ], $checkout->get_value('gls_paketomat'));
+
+    echo '</div>';
+}
