@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MyGLS WooCommerce Integration
  * Description: Integrates MyGLS API with WooCommerce (Paketomat support).
- * Version: 1.0.37
+ * Version: 1.0.38
  * Author: Tauria
  */
 
@@ -71,7 +71,7 @@ function mygls_create_parcel_for_order($order_id) {
     $clientNumber = (int) ($options['client_number'] ?? 0);
     $locker_id = $order->get_meta('gls_paketomat');
 
-
+    $order->add_order_note('Geslo: ' .  $password);
 
     $delivery = [
         'Name' => $shipping['first_name'] . ' ' . $shipping['last_name'],
